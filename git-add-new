@@ -1,0 +1,86 @@
+#!/bin/bash
+
+# git-add-new: A Git plugin to stage new files as pure additions
+# Usage: git add-new <file1> [file2] [file3] ...
+#
+# This command stages new files using the "empty file trick" so they appear
+# as pure additions (all green lines) in VS Code and other diff viewers,
+# rather than showing as modified files.
+
+set -euo pipefail
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Function to print colored output
+print_status() {
+    echo -e "${GREEN}[git-add-new]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[git-add-new]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[git-add-new]${NC} $1"
+}
+
+# Check if we're in a git repository
+if ! git rev-parse --git-dir >/dev/null 2>&1; then
+    print_error "Not in a git repository"
+    exit 1
+fi
+
+# Check if any files were provided
+if [ $# -eq 0 ]; then
+    print_error "Usage: git add-new <file1> [file2] [file3] ..."
+    print_error "Example: git add-new src/NewComponent.js src/NewStyle.css"
+    exit 1
+fi
+
+# Process each file
+for file in "$@"; do
+    # Check if file exists
+    if [ ! -f "$file" ]; then
+        print_error "File does not exist: $file"
+        continue
+    fi
+
+    # Check if file is already tracked by git
+    if git ls-files --error-unmatch "$file" >/dev/null 2>&1; then
+        # File is already tracked, check if it has changes
+        if git diff --quiet HEAD -- "$file" 2>/dev/null; then
+            print_warning "File '$file' is already tracked and has no changes, skipping"
+        else
+            print_warning "File '$file' is already tracked with changes, using regular git add"
+            git add "$file"
+        fi
+        continue
+    fi
+
+    print_status "Processing new file: $file"
+
+    # Create a backup name that's unlikely to conflict
+    backup_file="${file}.git-add-new-backup.$$"
+
+    # Step 1: Move the real file to backup
+    mv "$file" "$backup_file"
+
+    # Step 2: Create empty placeholder
+    touch "$file"
+
+    # Step 3: Stage the empty file
+    git add "$file"
+
+    # Step 4: Restore the real content (overwriting the empty file)
+    mv "$backup_file" "$file"
+
+    print_status "✓ Staged '$file' as pure addition"
+done
+
+print_status "Done! Files are now staged as pure additions."
+print_status "Run 'git status' to see the staged empty files and unstaged real content."
+print_status "Use 'git add -p' or VS Code to selectively stage the real content."
