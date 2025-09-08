@@ -49,15 +49,9 @@ for file in "$@"; do
         continue
     fi
 
-    # Check if file is already tracked by git
+    # If file has become tracked for any reason, skip to preserve pure addition
     if git ls-files --error-unmatch "$file" >/dev/null 2>&1; then
-        # File is already tracked, check if it has changes
-        if git diff --quiet HEAD -- "$file" 2>/dev/null; then
-            print_warning "File '$file' is already tracked and has no changes, skipping"
-        else
-            print_warning "File '$file' is already tracked with changes, using regular git add"
-            git add "$file"
-        fi
+        print_warning "File '$file' is already tracked, skipping to preserve pure addition behavior"
         continue
     fi
 

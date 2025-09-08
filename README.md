@@ -18,6 +18,10 @@ When you add a new file to Git normally, diff viewers often show it as
 The result: The staged version is empty, and your real content shows as unstaged
 additions (all green lines).
 
+Important: This utility only operates on untracked files. It will never stage
+already-tracked files to preserve the "pure addition" behavior. Use regular
+`git add` for tracked files.
+
 ## Installation
 
 The plugin is already installed globally. You can use it from any Git
@@ -47,6 +51,13 @@ git add -p  # Interactive staging
 3. Open VS Code or run `git add -p` to see pure additions (all green lines)
 4. Selectively stage the parts you want
 5. Commit as usual
+
+## Behavior and Notes
+
+- Only untracked files are processed. Tracked files are skipped with a warning.
+- Non-existent paths are reported and skipped.
+- This tool does not replace `git add` for normal staging; it is specifically
+  for preparing new files to show as pure additions in diff viewers.
 
 ## Safety Features
 
