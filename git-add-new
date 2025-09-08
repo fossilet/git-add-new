@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # git-add-new: A Git plugin to stage new files as pure additions
-# Usage: git add-new <file1> [file2] [file3] ...
+# Usage: git add-new [-A] <file1> [file2] [file3] ...
 #
 # This command stages new files using the "empty file trick" so they appear
 # as pure additions (all green lines) in VS Code and other diff viewers,
@@ -28,21 +28,108 @@ print_error() {
     echo -e "${RED}[git-add-new]${NC} $1"
 }
 
+# Show usage information
+usage() {
+    cat <<'EOF'
+git-add-new: Stage new files as pure additions
+
+Usage:
+  git add-new [-A] <file1> [file2] ...
+
+Options:
+  -A    Add all untracked files (respects .gitignore)
+  -h    Show this help message
+
+Notes:
+  - Only untracked files are processed. Already tracked files are ignored to
+    preserve the "pure addition" behavior. Use regular `git add` for tracked files.
+  - `-A` is mutually exclusive with file arguments. Do not combine `-A` with paths.
+EOF
+}
+
+# Parse options
+add_all=false
+while getopts ":Ah" opt; do
+    case $opt in
+        A)
+            add_all=true
+            ;;
+        h)
+            usage
+            exit 0
+            ;;
+        *)
+            print_error "Unknown option: -$OPTARG"
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+# Shift off parsed options
+shift $((OPTIND - 1))
+
 # Check if we're in a git repository
 if ! git rev-parse --git-dir >/dev/null 2>&1; then
     print_error "Not in a git repository"
     exit 1
 fi
 
-# Check if any files were provided
-if [ $# -eq 0 ]; then
-    print_error "Usage: git add-new <file1> [file2] [file3] ..."
-    print_error "Example: git add-new src/NewComponent.js src/NewStyle.css"
+# Enforce mutual exclusivity: -A cannot be used with file arguments
+if $add_all && [ $# -gt 0 ]; then
+    print_error "Do not combine -A with file arguments. Use either '-A' or explicit files, not both."
+    usage
     exit 1
 fi
 
+# Build the list of files to process (will be de-duplicated later)
+files_to_process=()
+
+# If -A is set, collect all untracked files (respects .gitignore)
+if $add_all; then
+    while IFS= read -r -d '' f; do
+        files_to_process+=("$f")
+    done < <(git ls-files --others --exclude-standard -z)
+fi
+
+# Append any positional arguments
+for arg in "$@"; do
+    files_to_process+=("$arg")
+done
+
+# Ensure we have something to process
+if [ ${#files_to_process[@]} -eq 0 ]; then
+    print_error "No files provided. Specify files or use -A to add all untracked files."
+    print_error "Examples:"
+    print_error "  git add-new -A"
+    print_error "  git add-new src/NewComponent.js src/NewStyle.css"
+    exit 1
+fi
+
+# Build list of files to process per mode
+unique_untracked=()
+if $add_all; then
+    # -A mode: git already returns untracked files; no dedup necessary
+    unique_untracked=("${files_to_process[@]}")
+else
+    # Positional-args mode: de-duplicate and only keep untracked files
+    declare -A seen=()
+    for file in "${files_to_process[@]}"; do
+        # Skip duplicates (string-equal paths)
+        if [[ -n "${seen[$file]:-}" ]]; then
+            continue
+        fi
+        seen[$file]=1
+
+        # Only consider untracked files
+        if git ls-files --others --exclude-standard -- "$file" >/dev/null 2>&1; then
+            unique_untracked+=("$file")
+        fi
+    done
+fi
+
 # Process each file
-for file in "$@"; do
+for file in "${unique_untracked[@]}"; do
     # Check if file exists
     if [ ! -f "$file" ]; then
         print_error "File does not exist: $file"

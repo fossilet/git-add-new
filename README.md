@@ -28,8 +28,13 @@ The plugin is already installed globally. You can use it from any Git
 repository:
 
 ```bash
-git add-new <file1> [file2] [file3] ...
+git add-new [-A] <file1> [file2] [file3] ...
 ```
+
+### Options
+
+- `-A` — Add all untracked files (respects `.gitignore`).
+  - Mutually exclusive with file arguments. Do not combine `-A` with paths.
 
 ## Usage Examples
 
@@ -40,6 +45,9 @@ git add-new src/NewComponent.js
 # Stage multiple new files
 git add-new src/NewComponent.js src/NewStyle.css docs/API.md
 
+# Stage all untracked files (respects .gitignore)
+git add-new -A
+
 # After running git-add-new, use VS Code or git add -p to selectively stage
 git add -p  # Interactive staging
 ```
@@ -47,7 +55,7 @@ git add -p  # Interactive staging
 ## Workflow
 
 1. Create your new file(s)
-2. Run `git add-new <files>` instead of `git add <files>`
+2. Run `git add-new <files>` (or `git add-new -A`) instead of `git add <files>`
 3. Open VS Code or run `git add -p` to see pure additions (all green lines)
 4. Selectively stage the parts you want
 5. Commit as usual
@@ -55,6 +63,7 @@ git add -p  # Interactive staging
 ## Behavior and Notes
 
 - Only untracked files are processed. Tracked files are skipped with a warning.
+- `-A` cannot be combined with explicit file paths; using both will error.
 - Non-existent paths are reported and skipped.
 - This tool does not replace `git add` for normal staging; it is specifically
   for preparing new files to show as pure additions in diff viewers.
