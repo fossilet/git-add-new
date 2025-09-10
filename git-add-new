@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # git-add-new: A Git plugin to stage new files as pure additions
 # Usage: git add-new [-A] <file1> [file2] [file3] ...
