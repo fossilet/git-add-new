@@ -22,10 +22,42 @@ Important: This utility only operates on untracked files. It will never stage
 already-tracked files to preserve the "pure addition" behavior. Use regular
 `git add` for tracked files.
 
+## Requirements
+
+- Git
+- Bash 4.0 or newer
+
 ## Installation
 
-The plugin is already installed globally. You can use it from any Git
-repository:
+Clone the repository and put the script somewhere on your `PATH`. Git
+automatically resolves `git add-new` to the `git-add-new` executable.
+
+```bash
+git clone https://github.com/fossilet/git-add-new.git
+cd git-add-new
+mkdir -p ~/.local/bin
+cp git-add-new ~/.local/bin/
+```
+
+Make sure `~/.local/bin` is on your `PATH`:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Alternatively, symlink it so updates follow the clone:
+
+```bash
+ln -s "$PWD/git-add-new" ~/.local/bin/git-add-new
+```
+
+Verify the installation:
+
+```bash
+git add-new -h
+```
+
+Once installed, the plugin works from any Git repository:
 
 ```bash
 git add-new [-A] <file1> [file2] [file3] ...
@@ -82,3 +114,7 @@ git add -p  # Interactive staging
 - **Easier partial staging**: In VS Code, you can easily see what you're adding
 - **Cleaner diffs**: Avoid confusing "modified" status for brand new files
 - **Team consistency**: Everyone sees the same clean addition diffs
+
+## License
+
+MIT — see [LICENSE](LICENSE).
