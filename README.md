@@ -25,7 +25,7 @@ already-tracked files to preserve the "pure addition" behavior. Use regular
 ## Requirements
 
 - Git
-- Bash 4.0 or newer
+- Bash 3.2 or newer (works with the stock `/bin/bash` on macOS)
 
 ## Installation
 
