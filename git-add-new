@@ -113,13 +113,21 @@ if $add_all; then
     unique_untracked=("${files_to_process[@]}")
 else
     # Positional-args mode: de-duplicate and only keep untracked files
-    declare -A seen=()
+    # (linear scan instead of an associative array to stay Bash 3.2 compatible)
+    seen=()
     for file in "${files_to_process[@]}"; do
         # Skip duplicates (string-equal paths)
-        if [[ -n "${seen[$file]:-}" ]]; then
+        duplicate=false
+        for seen_file in ${seen[@]+"${seen[@]}"}; do
+            if [ "$seen_file" = "$file" ]; then
+                duplicate=true
+                break
+            fi
+        done
+        if $duplicate; then
             continue
         fi
-        seen[$file]=1
+        seen+=("$file")
 
         # Only consider untracked files
         if git ls-files --others --exclude-standard -- "$file" >/dev/null 2>&1; then
@@ -129,7 +137,7 @@ else
 fi
 
 # Process each file
-for file in "${unique_untracked[@]}"; do
+for file in ${unique_untracked[@]+"${unique_untracked[@]}"}; do
     # Check if file exists
     if [ ! -f "$file" ]; then
         print_error "File does not exist: $file"
